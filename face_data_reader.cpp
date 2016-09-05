@@ -17,14 +17,14 @@ void fetch_tri_list(mxArray *pa, const char *outfile)
 
     if (ofs.good()) {
 
-        size_t ntl = mxGetM(pa);
-        double *data = static_cast<double*>(mxGetData(pa));
+        size_t nb_tl = mxGetM(pa);
+        int *data = static_cast<int*>(mxGetData(pa));
 
-        ofs << "# " << ntl << " x 3\n";
-        for (int i=0; i<ntl; ++i) {
+        ofs << "# " << nb_tl << " x 3\n";
+        for (int i=0; i<nb_tl; ++i) {
             ofs << static_cast<int>(data[i]) << ' '
-                << static_cast<int>(data[i+ntl]) << ' '
-                << static_cast<int>(data[i+ntl+ntl])
+                << static_cast<int>(data[i+nb_tl]) << ' '
+                << static_cast<int>(data[i+nb_tl+nb_tl])
                 << '\n';
         }
 
@@ -91,7 +91,7 @@ int fetch(const char *file) {
         size_t last_slash_idx = filename.find_last_of("/\\");
         string path = filename.substr(0, last_slash_idx);
 
-        auto fetch = [pmat, &path] (char* var_name, function<void(mxArray *, const char *)> fetch_func) {
+        auto fetch_closure = [pmat, &path] (const char* var_name, function<void(mxArray *, const char *)> fetch_func) {
             mxArray *pa = matGetVariable(pmat, var_name);
             if (pa == nullptr) {
                 printf("Error getting variable %s\n", var_name);
@@ -102,13 +102,16 @@ int fetch(const char *file) {
             }
         };
 
-        fetch("tl",      fetch_tri_list);
-        fetch("shapeMU", fetch_data);
-        fetch("texMU",   fetch_data);
-        fetch("shapePC", fetch_data);
-        fetch("texPC",   fetch_data);
-        fetch("shapeEV", fetch_data);
-        fetch("texEV", fetch_data);
+        fetch_closure("tl",       fetch_tri_list);
+        fetch_closure("mu_shape", fetch_data);
+        fetch_closure("mu_tex",   fetch_data);
+        fetch_closure("mu_exp",   fetch_data);
+        fetch_closure("pc_shape", fetch_data);
+        fetch_closure("pc_tex",   fetch_data);
+        fetch_closure("pc_exp",   fetch_data);
+        fetch_closure("ev_shape", fetch_data);
+        fetch_closure("ev_tex",   fetch_data);
+        fetch_closure("ev_exp",   fetch_data);
 
         if (matClose(pmat) != 0) {
             printf("Error closing file %s\n", file);
@@ -124,7 +127,7 @@ int fetch(const char *file) {
 int main(int argc, char **argv)
 {
     if (argc < 2) {
-        cout << "Usage: " << argv[0] << " bdm_model_path" << endl;
+        cout << "Usage: " << argv[0] << " face_data_path" << endl;
         return 0;
     }
     else {
