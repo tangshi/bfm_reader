@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "mat.h"
+#include <opencv2/core/mat.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -17,18 +19,17 @@ void fetch_tri_list(mxArray *pa, const char *outfile)
 
     if (ofs.good()) {
 
-        size_t nb_tl = mxGetM(pa);
-        int *data = static_cast<int*>(mxGetData(pa));
+        int32_t three = static_cast<int32_t>(mxGetM(pa));
+        int32_t nb_tl = static_cast<int32_t>(mxGetN(pa));
 
-        ofs << "# " << nb_tl << " x 3\n";
-        for (int i=0; i<nb_tl; ++i) {
-            ofs << static_cast<int>(data[i]) << ' '
-                << static_cast<int>(data[i+nb_tl]) << ' '
-                << static_cast<int>(data[i+nb_tl+nb_tl])
-                << '\n';
-        }
+        char *data = (char*)(mxGetData(pa));
+
+        ofs.write((char *)(&three), sizeof(int32_t));
+        ofs.write((char *)(&nb_tl), sizeof(int32_t));
+        ofs.write(data, three * nb_tl * sizeof(int32_t));
 
         ofs.close();
+
         mxDestroyArray(pa);
         cout << "Fetching done: " << outfile << endl;
     }
@@ -39,22 +40,6 @@ void fetch_tri_list(mxArray *pa, const char *outfile)
 
 }
 
-
-void write_array(ofstream& ofs, float *data, size_t nb_rows, size_t nb_cols)
-{
-    ofs << "# " << nb_cols << " x " << nb_rows << "\n";
-
-    for (size_t col = 0; col < nb_cols; col += 1) {
-
-        for (size_t row = 0; row < nb_rows; row += 1) {
-            ofs << data[row]   << ' ';
-        }
-        ofs << '\n';
-    }
-
-    ofs.close();
-}
-
 void fetch_data(mxArray *pa, const char *outfile)
 {
     ios_base::sync_with_stdio(false);
@@ -62,14 +47,18 @@ void fetch_data(mxArray *pa, const char *outfile)
 
     if (ofs.good()) {
 
-        size_t nb_rows = mxGetM(pa);
-        size_t nb_cols = mxGetN(pa);
-        float *data = static_cast<float*>(mxGetData(pa));
+        int32_t nb_rows = static_cast<int32_t>(mxGetM(pa));
+        int32_t nb_cols = static_cast<int32_t>(mxGetN(pa));
 
-        write_array(ofs, data, nb_rows, nb_cols);
+        char *data = (char*)(mxGetData(pa));
+
+        ofs.write((char*)(&nb_rows), sizeof(int32_t));
+        ofs.write((char*)(&nb_cols), sizeof(int32_t));
+        ofs.write(data, nb_rows * nb_cols * sizeof(float));
+
+        ofs.close();
 
         mxDestroyArray(pa);
-
         cout << "Fetching done: " << outfile << endl;
     }
     else {
@@ -97,7 +86,7 @@ int fetch(const char *file) {
                 printf("Error getting variable %s\n", var_name);
             }
             else {
-                string outfile = path + "/" + var_name + ".txt";
+                string outfile = path + "/" + var_name + ".bin";
                 fetch_func(pa, outfile.c_str());
             }
         };
