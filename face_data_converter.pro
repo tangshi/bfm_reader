@@ -3,7 +3,7 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 
-SOURCES += face_data_reader.cpp
+SOURCES += face_data_converter.cpp
 
 # matlab
 INCLUDEPATH += "C:\Program Files\MATLAB\MATLAB Compiler Runtime\v84\extern\include"
